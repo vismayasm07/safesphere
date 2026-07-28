@@ -41,6 +41,14 @@ const IC = {
   cap:'<path d="M12 3 2 8l10 5 10-5-10-5zM6 10.5V16c0 1.9 2.7 3 6 3s6-1.1 6-3v-5.5"/>',
   star:'<path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8L12 2z"/>',
   back:'<path d="M19 12H5M11 6l-6 6 6 6"/>',
+  user:'<circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
+  logout:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>',
+  sliders:'<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>',
+  mail:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
+  x:'<path d="M18 6 6 18M6 6l12 12"/>',
+  gauge2:'<path d="M12 13V7M4.9 19a9 9 0 1 1 14.2 0"/><circle cx="12" cy="13" r="1.5"/>',
+  card:'<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>',
 };
 const svg = (p,w=20) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="width:${w}px;height:${w}px">${p}</svg>`;
 
@@ -72,12 +80,15 @@ function buildNav(){
       ${v.badge?`<span class="badge">${v.badge}</span>`:''}
     </button>`).join('') +
     '<span class="nav-label">Account</span>' +
-    [['Notifications','bell'],['Settings','cog']].map(([l,ic])=>`<button class="nav-item"><span class="nav-ico">${svg(IC[ic],18)}</span><span class="nav-txt"><span class="nav-title">${l}</span></span></button>`).join('');
+    '<button class="nav-item" id="notifNav"><span class="nav-ico">'+svg(IC.bell,18)+'</span><span class="nav-txt"><span class="nav-title">Notifications</span></span><span class="badge" id="notifNavBadge">3</span></button>' +
+    '<button class="nav-item" data-view="settings"><span class="nav-ico">'+svg(IC.cog,18)+'</span><span class="nav-txt"><span class="nav-title">Settings</span></span></button>';
   document.getElementById('viewTabs').innerHTML = VIEWS.map(v=>`<button class="view-tab${v.id===CURRENT?' active':''}" data-view="${v.id}">${v.title}</button>`).join('');
   document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
+  const nn=document.getElementById('notifNav'); if(nn)nn.addEventListener('click',()=>toggleNotif());
 }
+const SUBVIEWS={ settings:{id:'settings',title:'Settings',icon:'cog',sub:'Account, safety preferences & privacy'} };
 function setView(id){
-  const v=VIEWS.find(x=>x.id===id); if(!v)return; CURRENT=id;
+  const v=VIEWS.find(x=>x.id===id)||SUBVIEWS[id]; if(!v)return; CURRENT=id;
   document.querySelectorAll('.nav-item[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===id));
   document.querySelectorAll('.view-tab').forEach(b=>b.classList.toggle('active',b.dataset.view===id));
   document.getElementById('pageTitle').innerHTML=svg(IC[v.icon],20)+v.title;
@@ -85,6 +96,7 @@ function setView(id){
   document.getElementById('content').innerHTML=`<section class="view active">${RENDER[id]()}</section>`;
   if(POST[id]) POST[id]();
   document.getElementById('content').scrollTop=0;
+  closeAllPops();
 }
 
 /* ---------- chart primitives ---------- */
@@ -352,7 +364,7 @@ function vNav(){
           <button class="go-btn" id="goBtn">${svg(IC.nav,16)}Go live</button>
         </div>
         <div id="navStatus" class="nav-status"><span style="width:8px;height:8px;border-radius:50%;background:var(--muted-2)"></span><span>Sample route shown · press <b>Go live</b> for real OpenStreetMap routing &amp; safety data</span></div>
-        <div id="map"></div>
+        <div id="map"><div class="skel skel-map" id="mapSkel">Loading live map…</div></div>
         <div class="map-legend">
           <span><i style="background:#188a5a"></i>Safe</span>
           <span><i style="background:#f7c948"></i>Caution</span>
@@ -484,6 +496,7 @@ function applyCtxLayers(){
   }
 }
 function initMap(){
+  const sk=document.getElementById('mapSkel'); if(sk)sk.remove();
   MAP=L.map('map',{zoomControl:true,attributionControl:true}).setView(CITY.c,14);
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'© OpenStreetMap © CARTO · SafeSphere',maxZoom:20}).addTo(MAP);
   applyCtxLayers(); drawRoute();
@@ -686,7 +699,7 @@ function vCity(){
       ${[['bulb','yellow','Street lamps','clLamp'],['cam','sky','CCTV cameras','clCctv'],['shield','green','Police stations','clPolice'],['store','coral','Safe havens','clHaven']].map(x=>`
         <div style="border:1px solid var(--stroke);border-radius:14px;padding:14px">
           <div class="kpi-ico tint-${x[1]}" style="width:38px;height:38px">${svg(IC[x[0]],18)}</div>
-          <div style="font-size:26px;font-weight:900;margin-top:10px" id="${x[3]}">…</div>
+          <div style="font-size:26px;font-weight:900;margin-top:10px" id="${x[3]}"><span class="count-load skel"></span></div>
           <div style="font-size:12px;font-weight:700;color:var(--ink-2)">${x[2]}</div>
         </div>`).join('')}
     </div>
@@ -741,10 +754,11 @@ function postCity(){
   const b=document.getElementById('exportGov'); if(b)b.addEventListener('click',()=>toast('Infrastructure report exported to Municipal Corporation'));
   const sel=document.getElementById('cityAnalyticsSel');
   const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  const skel=id=>{const e=document.getElementById(id);if(e)e.innerHTML='<span class="count-load skel"></span>';};
   const load=async()=>{
     const sub=document.getElementById('cityStatsSub');
     if(sub)sub.textContent='Scanning '+CITY.name+' live (OpenStreetMap)…';
-    ['clLamp','clCctv','clPolice','clHaven'].forEach(id=>set(id,'…'));
+    ['clLamp','clCctv','clPolice','clHaven'].forEach(skel);
     try{
       const s=await cityStats(CITY);
       set('clLamp',s.lamps); set('clCctv',s.cctv); set('clPolice',s.police); set('clHaven',s.havens); set('clIndex',s.idx);
@@ -879,8 +893,8 @@ function postApi(){
 }
 
 /* ---------- registry ---------- */
-const RENDER={overview:vOverview,nav:vNav,sos:vSos,community:vCommunity,city:vCity,havens:vHavens,api:vApi};
-const POST={overview:postOverview,nav:postNav,sos:postSos,community:postCommunity,city:postCity,havens:postHavens,api:postApi};
+const RENDER={overview:vOverview,nav:vNav,sos:vSos,community:vCommunity,city:vCity,havens:vHavens,api:vApi,settings:vSettings};
+const POST={overview:postOverview,nav:postNav,sos:postSos,community:postCommunity,city:postCity,havens:postHavens,api:postApi,settings:postSettings};
 
 /* ================= LANDING / HOME PAGE ================= */
 function fcard(icon,tint,title,desc,view){
@@ -1069,6 +1083,199 @@ function goHome(){
   const l=document.getElementById('landing'); l.classList.remove('hidden'); l.scrollTop=0;
 }
 
+/* ================= PRODUCT CHROME: palette · notifications · profile · settings ================= */
+const NOTIFS=[
+  {ic:'shield',tint:'green',t:'Safe corridor confirmed',d:'Your route via Connaught Place scored 94 DSI — fully lit, 6 guardians online.',time:'2m ago',unread:true},
+  {ic:'warn',tint:'coral',t:'Caution zone ahead',d:'Reported dim stretch near Paharganj underpass. Reroute suggested after 9 PM.',time:'18m ago',unread:true},
+  {ic:'users',tint:'sky',t:'Guardian joined nearby',d:'Priya is now an active guardian within 400 m of your usual route.',time:'1h ago',unread:true},
+  {ic:'haven',tint:'green',t:'New Safe Haven verified',d:'Apollo 24/7 Pharmacy added as a 24×7 Guardian Node on M-Block.',time:'3h ago',unread:false},
+  {ic:'chart',tint:'yellow',t:'Weekly safety report',d:'Your area DSI rose +3.4 this week. 214 streetlights repaired citywide.',time:'Yesterday',unread:false},
+];
+function popPos(el,pop){ const r=el.getBoundingClientRect(); return r; }
+function closeAllPops(){
+  ['notifPop','menuPop'].forEach(id=>{const e=document.getElementById(id);if(e)e.classList.remove('show');});
+  const s=document.getElementById('popScrim'); if(s)s.classList.remove('show');
+  const bb=document.getElementById('bellBtn'); if(bb)bb.classList.remove('on');
+  document.querySelectorAll('#avatarBtn').forEach(a=>a.classList.remove('on'));
+}
+function openPop(id){
+  const scrim=document.getElementById('popScrim'); const pop=document.getElementById(id);
+  const wasOpen=pop.classList.contains('show'); closeAllPops();
+  if(wasOpen)return;
+  scrim.classList.add('show'); pop.classList.add('show');
+}
+function renderNotif(){
+  const unread=NOTIFS.filter(n=>n.unread).length;
+  const pop=document.getElementById('notifPop');
+  pop.innerHTML=`
+    <div class="pop-head"><b>Notifications ${unread?`· ${unread} new`:''}</b><button class="link" id="markAll">Mark all read</button></div>
+    <div class="notif-list">${NOTIFS.map(n=>`
+      <div class="nrow ${n.unread?'unread':''}">
+        <span class="nic tint-${n.tint}">${svg(IC[n.ic],17)}</span>
+        <span class="ntx"><span class="nt">${n.t}</span><span class="nd">${n.d}</span><span class="ntime">${n.time}</span></span>
+      </div>`).join('')}</div>
+    <div class="cmdk-foot" style="justify-content:center"><span>You're all caught up · SafeSphere keeps watching 24×7</span></div>`;
+  pop.querySelector('#markAll').addEventListener('click',()=>{ NOTIFS.forEach(n=>n.unread=false); syncNotifBadges(); renderNotif(); });
+}
+function syncNotifBadges(){
+  const unread=NOTIFS.filter(n=>n.unread).length;
+  const dot=document.getElementById('bellDot'); if(dot)dot.classList.toggle('hide',unread===0);
+  const nb=document.getElementById('notifNavBadge'); if(nb){ nb.textContent=unread; nb.style.display=unread?'':'none'; }
+}
+function toggleNotif(){ renderNotif(); const bb=document.getElementById('bellBtn'); openPop('notifPop'); if(document.getElementById('notifPop').classList.contains('show')&&bb)bb.classList.add('on'); }
+function renderMenu(){
+  const pop=document.getElementById('menuPop');
+  pop.innerHTML=`
+    <div class="menu-id"><span class="av">SV</span><div><b>S M Vismaya</b><small>vismaya@safesphere.app</small></div></div>
+    <button class="menu-item" data-go="settings">${svg(IC.user,17)}Profile</button>
+    <button class="menu-item" data-go="settings">${svg(IC.cog,17)}Settings</button>
+    <button class="menu-item" data-go="api">${svg(IC.plug,17)}Developer / API keys</button>
+    <button class="menu-item" id="menuTheme">${svg(IC.moon,17)}Night-safe mode</button>
+    <div class="menu-sep"></div>
+    <button class="menu-item danger" id="menuOut">${svg(IC.logout,17)}Sign out</button>`;
+  pop.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>{ closeAllPops(); setView(b.dataset.go); }));
+  pop.querySelector('#menuTheme').addEventListener('click',()=>{ closeAllPops(); toast('Night-safe mode is on — routes bias harder toward lit streets'); });
+  pop.querySelector('#menuOut').addEventListener('click',()=>{ closeAllPops(); goHome(); toast('Signed out · demo reset to home'); });
+}
+function toggleMenu(){ renderMenu(); const av=document.getElementById('avatarBtn'); openPop('menuPop'); if(document.getElementById('menuPop').classList.contains('show')&&av)av.classList.add('on'); }
+
+/* ---------- command palette ---------- */
+function cmdItems(){
+  return [
+    {g:'Navigate',ic:'home',t:'Overview',d:'Live status & product home',run:()=>go('overview')},
+    {g:'Navigate',ic:'compass',t:'Safe Navigation',d:'Plan a DSI-aware safest route',run:()=>go('nav')},
+    {g:'Navigate',ic:'sos',t:'SOS & Guardian',d:'Emergency + active monitoring',run:()=>go('sos')},
+    {g:'Navigate',ic:'users',t:'Community Reports',d:'Collective safety intelligence',run:()=>go('community')},
+    {g:'Navigate',ic:'chart',t:'City Analytics',d:'Live OpenStreetMap safety scan',run:()=>go('city')},
+    {g:'Navigate',ic:'haven',t:'Safe Havens',d:'Guardian nodes near you',run:()=>go('havens')},
+    {g:'Navigate',ic:'plug',t:'Safety API',d:'B2B integration & keys',run:()=>go('api')},
+    {g:'Navigate',ic:'cog',t:'Settings',d:'Account, preferences & privacy',run:()=>go('settings')},
+    {g:'Actions',ic:'sos',t:'Trigger Emergency SOS',d:'Alert your trusted circle now',run:()=>go('sos')},
+    {g:'Actions',ic:'nav',t:'Go live · route now',d:'Fetch a real safe walk',run:()=>{ go('nav'); setTimeout(()=>{try{runLive();}catch(e){}},200); }},
+    {g:'Actions',ic:'pin',t:'Use my location',d:'Route from where I am',run:()=>{ go('nav'); setTimeout(()=>{const b=document.getElementById('geoBtn');if(b)b.click();},250); }},
+    ...CITIES.map(c=>({g:'Switch city',ic:'globe',t:c.name,d:'Demo live routing in '+c.name,run:()=>{ CITY=c; go('nav'); setTimeout(()=>{const s=document.getElementById('citySel');if(s){s.value=String(CITIES.indexOf(c));s.dispatchEvent(new Event('change'));}},220); }})),
+  ];
+  function go(v){ closeCmdk(); if(document.getElementById('dashboard').classList.contains('hidden'))enterDashboard(v); else setView(v); }
+}
+let CMDK_SEL=0, CMDK_FILTERED=[];
+function openCmdk(){
+  const scrim=document.getElementById('cmdkScrim');
+  scrim.innerHTML=`
+    <div class="cmdk" role="dialog" aria-label="Command palette">
+      <div class="cmdk-top">${svg(IC.search,19)}<input id="cmdkInput" placeholder="Search views, actions, cities…" autocomplete="off" /><kbd>ESC</kbd></div>
+      <div class="cmdk-list" id="cmdkList"></div>
+      <div class="cmdk-foot"><span><kbd>↑</kbd><kbd>↓</kbd>navigate</span><span><kbd>↵</kbd>open</span><span><kbd>esc</kbd>close</span></div>
+    </div>`;
+  scrim.classList.add('show');
+  const input=document.getElementById('cmdkInput');
+  CMDK_SEL=0; filterCmdk('');
+  input.addEventListener('input',()=>filterCmdk(input.value));
+  input.addEventListener('keydown',cmdkKeys);
+  setTimeout(()=>input.focus(),30);
+}
+function filterCmdk(q){
+  const all=cmdItems(); const s=q.trim().toLowerCase();
+  CMDK_FILTERED = s? all.filter(i=>(i.t+' '+i.d+' '+i.g).toLowerCase().includes(s)) : all;
+  CMDK_SEL=0; drawCmdk();
+}
+function drawCmdk(){
+  const list=document.getElementById('cmdkList'); if(!list)return;
+  if(!CMDK_FILTERED.length){ list.innerHTML='<div class="cmdk-empty">No matches — try “route”, “SOS”, or a city name</div>'; return; }
+  let html='',lastG='';
+  CMDK_FILTERED.forEach((it,i)=>{
+    if(it.g!==lastG){ html+=`<div class="cmdk-group">${it.g}</div>`; lastG=it.g; }
+    html+=`<div class="cmdk-item ${i===CMDK_SEL?'sel':''}" data-i="${i}"><span class="cic">${svg(IC[it.ic],17)}</span><span class="ctx"><span class="ct">${it.t}</span><span class="cd">${it.d}</span></span><span class="carrow">↵</span></div>`;
+  });
+  list.innerHTML=html;
+  list.querySelectorAll('.cmdk-item').forEach(el=>{
+    el.addEventListener('mousemove',()=>{ CMDK_SEL=+el.dataset.i; markCmdk(); });
+    el.addEventListener('click',()=>{ CMDK_FILTERED[+el.dataset.i].run(); });
+  });
+}
+function markCmdk(){ document.querySelectorAll('.cmdk-item').forEach(el=>el.classList.toggle('sel',+el.dataset.i===CMDK_SEL)); }
+function cmdkKeys(e){
+  if(e.key==='ArrowDown'){ e.preventDefault(); CMDK_SEL=Math.min(CMDK_FILTERED.length-1,CMDK_SEL+1); markCmdk(); scrollSel(); }
+  else if(e.key==='ArrowUp'){ e.preventDefault(); CMDK_SEL=Math.max(0,CMDK_SEL-1); markCmdk(); scrollSel(); }
+  else if(e.key==='Enter'){ e.preventDefault(); const it=CMDK_FILTERED[CMDK_SEL]; if(it)it.run(); }
+  else if(e.key==='Escape'){ closeCmdk(); }
+}
+function scrollSel(){ const el=document.querySelector('.cmdk-item.sel'); if(el)el.scrollIntoView({block:'nearest'}); }
+function closeCmdk(){ const s=document.getElementById('cmdkScrim'); if(s){s.classList.remove('show'); s.innerHTML='';} }
+
+/* ---------- settings view ---------- */
+let SET_TAB='profile';
+function vSettings(){
+  const tabs=[['profile','Profile','user'],['safety','Safety preferences','shield'],['circle','Trusted circle','users'],['notifs','Notifications','bell'],['privacy','Data & privacy','lock']];
+  return `
+  <div class="set-wrap">
+    <div class="card pad set-nav" style="align-self:start">
+      ${tabs.map(([id,l,ic])=>`<button class="${id===SET_TAB?'active':''}" data-set="${id}">${svg(IC[ic],17)}${l}</button>`).join('')}
+    </div>
+    <div class="card pad" id="setPanel">${settingsPanel(SET_TAB)}</div>
+  </div>`;
+}
+function settingsPanel(tab){
+  if(tab==='profile') return `
+    <div class="sec-head"><div><div class="sec-title">Profile</div><div class="sec-sub">How you appear across SafeSphere</div></div></div>
+    <div class="menu-id" style="border:none;padding:0 0 8px"><span class="av" style="width:56px;height:56px;border-radius:16px;font-size:20px">SV</span><div><b style="font-size:16px">S M Vismaya</b><small>Premium · Guardian member since 2025</small></div></div>
+    <div class="set-row"><div class="srt"><b>Full name</b><small>Shown to guardians when you trigger SOS</small></div><input class="set-input" value="S M Vismaya"/></div>
+    <div class="set-row"><div class="srt"><b>Email</b><small>For alerts & weekly safety reports</small></div><input class="set-input" value="vismaya@safesphere.app"/></div>
+    <div class="set-row"><div class="srt"><b>Phone</b><small>Used for fake-call & SOS SMS</small></div><input class="set-input" value="+91 •••• •• 21"/></div>
+    <div class="set-row"><div class="srt"><b>Home city</b><small>Default city for routing & analytics</small></div>
+      <select class="set-input" id="setCity">${CITIES.map(c=>`<option ${c===CITY?'selected':''}>${c.name}</option>`).join('')}</select></div>`;
+  if(tab==='safety') return `
+    <div class="sec-head"><div><div class="sec-title">Safety preferences</div><div class="sec-sub">Tune how the Dynamic Safety Index routes you</div></div></div>
+    <div class="set-row"><div class="srt"><b>DSI sensitivity</b><small>How strongly to prefer safe streets over speed</small></div>
+      <div class="seg" data-seg="dsi"><button>Balanced</button><button class="on">Safety-first</button><button>Max safety</button></div></div>
+    <div class="set-row"><div class="srt"><b>Night-safe mode</b><small>After dark, bias harder toward lit, busy corridors</small></div><button class="switch on" data-sw></button></div>
+    <div class="set-row"><div class="srt"><b>Avoid unlit stretches</b><small>Never route through streets with no lamps</small></div><button class="switch on" data-sw></button></div>
+    <div class="set-row"><div class="srt"><b>Keep walks under 2 km</b><small>Prefer short, safe corridors for demos</small></div><button class="switch on" data-sw></button></div>
+    <div class="set-row"><div class="srt"><b>Auto-reroute on new report</b><small>Recalculate if a caution zone appears ahead</small></div><button class="switch" data-sw></button></div>`;
+  if(tab==='circle') return `
+    <div class="sec-head"><div><div class="sec-title">Trusted circle</div><div class="sec-sub">Who gets alerted the moment you press SOS</div></div><button class="btn-ghost" style="width:auto;margin:0;padding:8px 14px">${svg(IC.users,15)}Invite</button></div>
+    ${[['Amma','Mother · +91 •••• 21','green','Primary'],['Priya','Roommate · guardian','coral','Active'],['Campus Security','24/7 desk','sky','Institution'],['Rahul','Brother · +91 •••• 40','yellow','Backup']].map(x=>`
+      <div class="set-row"><span class="nic tint-${x[2]}" style="width:38px;height:38px;border-radius:11px;display:grid;place-items:center">${svg(IC.user,17)}</span><div class="srt"><b>${x[0]}</b><small>${x[1]}</small></div><span class="badge" style="background:var(--${x[2]}-50);color:var(--${x[2]}-2,var(--${x[2]}))">${x[3]}</span></div>`).join('')}`;
+  if(tab==='notifs') return `
+    <div class="sec-head"><div><div class="sec-title">Notifications</div><div class="sec-sub">Choose what SafeSphere pings you about</div></div></div>
+    ${[['Caution zones on my route','Dim/unsafe stretches ahead',1],['Guardian activity','When guardians join or go offline nearby',1],['New Safe Havens','Verified 24×7 nodes added near you',1],['Weekly safety report','Your area DSI trend & infra fixes',1],['Community reports nearby','New incident reports within 1 km',0],['Product updates','New SafeSphere features',0]].map(x=>`
+      <div class="set-row"><div class="srt"><b>${x[0]}</b><small>${x[1]}</small></div><button class="switch ${x[2]?'on':''}" data-sw></button></div>`).join('')}`;
+  return `
+    <div class="sec-head"><div><div class="sec-title">Data & privacy</div><div class="sec-sub">You control your location and who can see it</div></div></div>
+    <div class="set-row"><div class="srt"><b>Share live location during SOS</b><small>Only your trusted circle & nearest Guardian Node</small></div><button class="switch on" data-sw></button></div>
+    <div class="set-row"><div class="srt"><b>Contribute anonymized safety data</b><small>Helps improve citywide DSI for everyone</small></div><button class="switch on" data-sw></button></div>
+    <div class="set-row"><div class="srt"><b>Location history</b><small>Store routes to personalize safe corridors</small></div><button class="switch" data-sw></button></div>
+    <div class="set-row"><div class="srt"><b>Two-factor authentication</b><small>Extra security on your account</small></div><span class="badge" style="background:var(--green-50);color:var(--green-2)">Enabled</span></div>
+    <div class="set-row"><div class="srt"><b>Export my data</b><small>Download everything SafeSphere holds</small></div><button class="btn-ghost" style="width:auto;margin:0;padding:8px 14px">${svg(IC.send,15)}Export</button></div>`;
+}
+function postSettings(){
+  document.querySelectorAll('[data-set]').forEach(b=>b.addEventListener('click',()=>{
+    SET_TAB=b.dataset.set;
+    document.querySelectorAll('[data-set]').forEach(x=>x.classList.toggle('active',x===b));
+    document.getElementById('setPanel').innerHTML=settingsPanel(SET_TAB);
+    wireSettingsControls();
+  }));
+  wireSettingsControls();
+}
+function wireSettingsControls(){
+  document.querySelectorAll('#setPanel [data-sw]').forEach(sw=>sw.addEventListener('click',()=>{ sw.classList.toggle('on'); toast(sw.classList.contains('on')?'Preference enabled':'Preference disabled'); }));
+  document.querySelectorAll('#setPanel [data-seg] button').forEach(b=>b.addEventListener('click',()=>{ b.parentElement.querySelectorAll('button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); toast('DSI sensitivity: '+b.textContent); }));
+  const sc=document.getElementById('setCity'); if(sc)sc.addEventListener('change',()=>{ CITY=CITIES.find(c=>c.name===sc.value)||CITY; toast('Home city set to '+CITY.name); });
+}
+
+/* ---------- global chrome wiring ---------- */
+function wireChrome(){
+  const bell=document.getElementById('bellBtn'); if(bell)bell.addEventListener('click',toggleNotif);
+  const av=document.getElementById('avatarBtn'); if(av)av.addEventListener('click',toggleMenu);
+  const srch=document.getElementById('tbSearch'); if(srch)srch.addEventListener('click',openCmdk);
+  const scrim=document.getElementById('popScrim'); if(scrim)scrim.addEventListener('click',closeAllPops);
+  const cs=document.getElementById('cmdkScrim'); if(cs)cs.addEventListener('click',e=>{ if(e.target===cs)closeCmdk(); });
+  document.addEventListener('keydown',e=>{
+    if((e.metaKey||e.ctrlKey)&&(e.key==='k'||e.key==='K')){ e.preventDefault(); const open=document.getElementById('cmdkScrim').classList.contains('show'); if(open)closeCmdk(); else openCmdk(); }
+    else if(e.key==='Escape'){ closeAllPops(); closeCmdk(); }
+  });
+  syncNotifBadges();
+}
+
 /* ---------- boot ---------- */
 function boot(){
   buildNav();
@@ -1077,5 +1284,6 @@ function boot(){
   document.getElementById('sosSide').addEventListener('click',()=>setView('sos'));
   const hn=document.getElementById('homeNav'); if(hn)hn.addEventListener('click',goHome);
   const brand=document.querySelector('.sidebar .brand'); if(brand){brand.style.cursor='pointer';brand.title='Back to home';brand.addEventListener('click',goHome);}
+  wireChrome();
 }
 if(document.readyState!=='loading') boot(); else document.addEventListener('DOMContentLoaded',boot);
