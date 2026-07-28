@@ -35,6 +35,7 @@ const IC = {
   lock:'<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
   moon:'<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
   send:'<path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/>',
+  chat:'<path d="M21 11.5a8.4 8.4 0 0 1-8.5 8.4 8.6 8.6 0 0 1-3.9-.9L3 20.5l1.4-4.4a8.4 8.4 0 0 1-1-4A8.4 8.4 0 0 1 12 3.6a8.4 8.4 0 0 1 9 7.9z"/>',
   arrow:'<path d="M5 12h14M13 6l6 6-6 6"/>',
   play:'<path d="M7 5v14l11-7z"/>',
   layers:'<path d="M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>',
@@ -93,14 +94,16 @@ function setView(id){
   document.querySelectorAll('.view-tab').forEach(b=>b.classList.toggle('active',b.dataset.view===id));
   document.getElementById('pageTitle').innerHTML=svg(IC[v.icon],20)+v.title;
   document.getElementById('pageSub').textContent=v.sub;
-  document.getElementById('content').innerHTML=`<section class="view active">${RENDER[id]()}</section>`;
+  const content=document.getElementById('content');
+  content.className='content'+(id==='nav'?' content--map':'');
+  content.innerHTML=`<section class="view active">${RENDER[id]()}</section>`;
   if(POST[id]) POST[id]();
   document.getElementById('content').scrollTop=0;
   closeAllPops();
 }
 
 /* ---------- chart primitives ---------- */
-function lineChart(data,{w=560,h=180,color='#188a5a',fill='rgba(24,138,90,.13)'}={}){
+function lineChart(data,{w=560,h=180,color='#12a15f',fill='rgba(24,138,90,.13)'}={}){
   const max=Math.max(...data)*1.08,min=Math.min(...data)*0.9;
   const X=i=>(i/(data.length-1))*w,Y=v=>h-12-((v-min)/(max-min||1))*(h-28);
   let d=`M${X(0)} ${Y(data[0])}`;
@@ -108,7 +111,7 @@ function lineChart(data,{w=560,h=180,color='#188a5a',fill='rgba(24,138,90,.13)'}
   let g='';for(let k=0;k<4;k++){const y=12+k*((h-28)/3);g+=`<line x1="0" y1="${y}" x2="${w}" y2="${y}" stroke="#eef4ef"/>`;}
   return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" preserveAspectRatio="none">${g}<path d="${d} L${w} ${h} L0 ${h} Z" fill="${fill}"/><path d="${d}" fill="none" stroke="${color}" stroke-width="2.6" stroke-linecap="round"/><circle cx="${X(data.length-1)}" cy="${Y(data[data.length-1])}" r="4.5" fill="${color}" stroke="#fff" stroke-width="2"/></svg>`;
 }
-function bars(data,{w=460,h=180,color='#f4643f'}={}){
+function bars(data,{w=460,h=180,color='#f4436f'}={}){
   const max=Math.max(...data)*1.15,bw=w/data.length;let r='';
   data.forEach((v,i)=>{const bh=(v/max)*(h-16);r+=`<rect x="${i*bw+bw*.22}" y="${h-bh}" width="${bw*.56}" height="${bh}" rx="5" fill="${color}" opacity="${(.4+.6*v/max).toFixed(2)}"/>`;});
   return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" preserveAspectRatio="none">${r}</svg>`;
@@ -122,7 +125,7 @@ function donut(segs,size=150){
     p+=`<path d="M${x0} ${y0} A${r} ${r} 0 ${lg} 1 ${x1} ${y1} L${ix1} ${iy1} A${ir} ${ir} 0 ${lg} 0 ${ix0} ${iy0} Z" fill="${s.c}"/>`;});
   return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${p}</svg>`;
 }
-function gauge(value,{size=150,color='#188a5a'}={}){
+function gauge(value,{size=150,color='#12a15f'}={}){
   const r=size/2-14,cx=size/2,cy=size/2,C=Math.PI*r,off=C*(1-value/100);
   const p=`M14 ${cy} A${r} ${r} 0 0 1 ${size-14} ${cy}`;
   return `<svg width="${size}" height="${size/2+16}" viewBox="0 0 ${size} ${size/2+16}"><path d="${p}" fill="none" stroke="#e9f1ea" stroke-width="14" stroke-linecap="round"/><path d="${p}" fill="none" stroke="${color}" stroke-width="14" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${off}"/></svg>`;
@@ -136,7 +139,7 @@ function spark(data,color,w=118,h=36){
 function kpiCard(o){
   return `<div class="card kpi hoverable"><div class="kpi-top"><div class="kpi-ico tint-${o.tint}">${svg(IC[o.icon],20)}</div>${o.spark?spark(o.spark,o.sparkColor):''}</div><div class="kpi-label">${o.label}</div><div class="kpi-val">${o.value} <small class="${o.up===false?'down':'up'}">${o.delta}</small></div></div>`;
 }
-const TONE={green:'#188a5a',coral:'#f4643f',yellow:'#eab308',sky:'#2f80d6',rose:'#e5484d'};
+const TONE={green:'#12a15f',coral:'#f4436f',yellow:'#f59e0b',sky:'#0ea5e9',rose:'#f43f5e',violet:'#8b5cf6'};
 
 /* ================= VIEW: OVERVIEW (operational home) ================= */
 function vOverview(){
@@ -179,10 +182,10 @@ function vOverview(){
   </div>
 
   <div class="grid g4 mt">
-    ${kpiCard({icon:'route',tint:'green',label:'Streets Scored (DSI)',value:'48,210',delta:'+1.2k',spark:[30,32,34,33,38,40,42,45,47,48],sparkColor:'#188a5a'})}
-    ${kpiCard({icon:'users',tint:'coral',label:'Community Reports',value:'126k',delta:'+3.4%',spark:[70,74,78,80,86,90,96,104,116,126],sparkColor:'#f4643f'})}
-    ${kpiCard({icon:'haven',tint:'yellow',label:'Safe Havens',value:'1,340',delta:'+28',spark:[10,12,14,16,18,20,23,25,27,28],sparkColor:'#eab308'})}
-    ${kpiCard({icon:'clock',tint:'sky',label:'Avg SOS Response',value:'1m 38s',delta:'-16s',spark:[130,124,120,116,112,108,104,100,98,98],sparkColor:'#2f80d6'})}
+    ${kpiCard({icon:'route',tint:'green',label:'Streets Scored (DSI)',value:'48,210',delta:'+1.2k',spark:[30,32,34,33,38,40,42,45,47,48],sparkColor:'#12a15f'})}
+    ${kpiCard({icon:'users',tint:'coral',label:'Community Reports',value:'126k',delta:'+3.4%',spark:[70,74,78,80,86,90,96,104,116,126],sparkColor:'#f4436f'})}
+    ${kpiCard({icon:'haven',tint:'yellow',label:'Safe Havens',value:'1,340',delta:'+28',spark:[10,12,14,16,18,20,23,25,27,28],sparkColor:'#f59e0b'})}
+    ${kpiCard({icon:'clock',tint:'sky',label:'Avg SOS Response',value:'1m 38s',delta:'-16s',spark:[130,124,120,116,112,108,104,100,98,98],sparkColor:'#0ea5e9'})}
   </div>
 
   <div class="grid g12 mt">
@@ -235,11 +238,13 @@ const CITIES=[
 ];
 let CITY=CITIES[0];
 let USER_LOC=null;
+let FROM_PT=null, TO_PT=null;
+function escq(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 async function resolvePlace(q){
   if(q&&q.trim().toLowerCase()==='my location'&&USER_LOC) return {lat:USER_LOC.lat,lng:USER_LOC.lng,name:'My location'};
   return geocode(q);
 }
-function phaseOf(h){ if(h>=6&&h<11)return['Morning','#f7c948']; if(h>=11&&h<16)return['Midday','#188a5a']; if(h>=16&&h<19)return['Evening','#2f80d6']; if(h>=19&&h<23)return['Night','#f4643f']; return['Late night','#123227']; }
+function phaseOf(h){ if(h>=6&&h<11)return['Morning','#f7b52e']; if(h>=11&&h<16)return['Midday','#12a15f']; if(h>=16&&h<19)return['Evening','#0ea5e9']; if(h>=19&&h<23)return['Night','#f4436f']; return['Late night','#0e1533']; }
 function dsiFactor(h){ if(h>=7&&h<17)return 1.0; if(h>=17&&h<20)return .93; if(h>=20&&h<23)return .8; return .66; }
 function scoreFor(base,h){ return Math.max(20,Math.round(base*dsiFactor(h))); }
 
@@ -250,12 +255,61 @@ function dsiScore(r){ return r&&r.live ? Math.max(20,Math.round(r.live.raw*dsiFa
 function hav(a,b){const R=6371000,dLat=(b[0]-a[0])*Math.PI/180,dLng=(b[1]-a[1])*Math.PI/180,la1=a[0]*Math.PI/180,la2=b[0]*Math.PI/180;const x=Math.sin(dLat/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dLng/2)**2;return 2*R*Math.asin(Math.sqrt(x));}
 function routeKm(c){let d=0;for(let i=1;i<c.length;i++)d+=hav(c[i-1],c[i]);return d/1000;}
 async function geocode(q){
-  let u='https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=in';
-  if(CITY&&CITY.c){const la=CITY.c[0],ln=CITY.c[1],d=0.28;u+=`&viewbox=${ln-d},${la+d},${ln+d},${la-d}`;}
-  u+='&q='+encodeURIComponent(q);
+  // India-wide search — any city, town, street or landmark. Light bias to current region only as a tie-breaker.
+  let u='https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=in&q='+encodeURIComponent(q);
   const r=await fetch(u,{headers:{'Accept':'application/json'}}); const j=await r.json();
   if(!j||!j.length) throw new Error('Place not found: '+q);
   return {lat:+j[0].lat,lng:+j[0].lon,name:(j[0].display_name||q).split(',')[0]};
+}
+/* ---------- live place autocomplete (Nominatim) ---------- */
+async function suggestPlaces(q){
+  if(!q||q.trim().length<3) return [];
+  let u='https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&dedupe=1&limit=6&countrycodes=in';
+  if(CITY&&CITY.c){const la=CITY.c[0],ln=CITY.c[1],d=0.9;u+=`&viewbox=${ln-d},${la+d},${ln+d},${la-d}&bounded=0`;}
+  u+='&q='+encodeURIComponent(q);
+  const r=await fetch(u,{headers:{'Accept':'application/json'}});
+  if(!r.ok) return [];
+  const j=await r.json();
+  return (j||[]).map(o=>{
+    const parts=(o.display_name||'').split(',').map(s=>s.trim());
+    return {lat:+o.lat,lng:+o.lon,main:parts[0]||o.display_name||q,sub:parts.slice(1,4).join(', '),type:(o.type||o.class||'place').replace(/_/g,' ')};
+  });
+}
+function attachAutocomplete(input, dropId, setPoint){
+  const drop=document.getElementById(dropId); if(!input||!drop)return;
+  let items=[], sel=-1, seq=0, tmr=null;
+  const close=()=>{drop.classList.remove('show');drop.innerHTML='';items=[];sel=-1;};
+  const paint=()=>{
+    drop.innerHTML=items.map((it,i)=>`<button class="ac-item${i===sel?' sel':''}" data-i="${i}">
+      <span class="ac-ic">${svg(IC.pin,15)}</span>
+      <span class="ac-tx"><span class="ac-main">${escq(it.main)}</span><span class="ac-sub">${escq(it.sub)}</span></span>
+      ${it.type?`<span class="ac-type">${escq(it.type)}</span>`:''}
+    </button>`).join('');
+    drop.classList.add('show');
+    drop.querySelectorAll('[data-i]').forEach(b=>b.addEventListener('mousedown',e=>{e.preventDefault();pick(+b.dataset.i);}));
+  };
+  const pick=(i)=>{const it=items[i]; if(!it)return; input.value=it.main; input.dataset.resolved='1'; setPoint({lat:it.lat,lng:it.lng,name:it.main}); close();};
+  input.addEventListener('input',()=>{
+    input.dataset.resolved=''; setPoint(null);
+    const q=input.value; clearTimeout(tmr);
+    if(q.trim().length<3){close();return;}
+    drop.innerHTML='<div class="ac-hint"><span class="sp"></span>Searching places…</div>'; drop.classList.add('show');
+    const my=++seq;
+    tmr=setTimeout(async()=>{
+      try{ const res=await suggestPlaces(q); if(my!==seq)return; items=res; sel=-1;
+        if(!items.length){drop.innerHTML='<div class="ac-hint">No matching places in India</div>';return;}
+        paint();
+      }catch(e){ if(my===seq)close(); }
+    },260);
+  });
+  input.addEventListener('keydown',e=>{
+    const open=drop.classList.contains('show')&&items.length;
+    if(e.key==='ArrowDown'&&open){e.preventDefault();sel=Math.min(items.length-1,sel+1);paint();}
+    else if(e.key==='ArrowUp'&&open){e.preventDefault();sel=Math.max(0,sel-1);paint();}
+    else if(e.key==='Enter'){ if(open&&sel>=0){e.preventDefault();pick(sel);} else{close();runLive();} }
+    else if(e.key==='Escape'){close();}
+  });
+  input.addEventListener('blur',()=>setTimeout(close,160));
 }
 async function osrmRoutes(a,b){
   const u=`https://router.project-osrm.org/route/v1/foot/${a.lng},${a.lat};${b.lng},${b.lat}?alternatives=3&overview=full&geometries=geojson`;
@@ -306,13 +360,18 @@ function setNavStatus(msg,kind){
   el.innerHTML=`<span style="width:8px;height:8px;border-radius:50%;background:${c};${kind==='load'?'animation:sospulse 1.2s infinite':''}"></span><span>${msg}</span>`;
 }
 async function runLive(){
-  const from=(document.getElementById('fromInput')||{}).value, to=(document.getElementById('toInput')||{}).value;
+  const fromEl=document.getElementById('fromInput'), toEl=document.getElementById('toInput');
+  const from=(fromEl||{}).value, to=(toEl||{}).value;
   if(!from||!to){toast('Enter a start and destination');return;}
   const btn=document.getElementById('goBtn'); if(btn)btn.disabled=true;
   setNavStatus('Searching places (Nominatim)…','load');
   try{
-    const [A,B]=await Promise.all([resolvePlace(from),resolvePlace(to)]);
-    FROM_LABEL=A.name; TO_LABEL=B.name;
+    const needA=!(FROM_PT&&fromEl&&fromEl.dataset.resolved), needB=!(TO_PT&&toEl&&toEl.dataset.resolved);
+    const [A,B]=await Promise.all([
+      needA?resolvePlace(from):Promise.resolve(FROM_PT),
+      needB?resolvePlace(to):Promise.resolve(TO_PT)
+    ]);
+    FROM_PT=A; TO_PT=B; FROM_LABEL=A.name; TO_LABEL=B.name;
     setNavStatus('Finding safe routes (OSRM)…','load');
     const routes=await osrmRoutes(A,B);
     const all=routes.flatMap(r=>r.coords), lats=all.map(c=>c[0]), lngs=all.map(c=>c[1]), pad=0.003;
@@ -352,38 +411,42 @@ async function runLive(){
 function vNav(){
   const ph=phaseOf(HOUR);
   return `
-  <div class="grid g12">
-    <div class="col-8">
-      <div class="card map-card hoverable">
-        <div class="route-bar">
-          <select id="citySel" class="city-sel" title="Pick a city in India">${CITIES.map((c,i)=>`<option value="${i}"${i===CITIES.indexOf(CITY)?' selected':''}>${c.name}</option>`).join('')}</select>
-          <div class="field"><span class="d" style="background:var(--green)"></span><input id="fromInput" value="${CITY.from}" placeholder="Start…" /></div>
-          ${svg(IC.route,18)}
-          <div class="field"><span class="d" style="background:var(--coral)"></span><input id="toInput" value="${CITY.to}" placeholder="Destination…" /></div>
-          <button class="loc-btn" id="geoBtn" title="Use my location">${svg(IC.pin,16)}</button>
-          <button class="go-btn" id="goBtn">${svg(IC.nav,16)}Go live</button>
+  <div class="mapstage">
+    <aside class="cockpit">
+      <div class="ck-head">
+        <div>
+          <div class="ck-title">Plan a safe route</div>
+          <div class="ck-sub">Search any place in India — SafeSphere routes you the safest way, under 2&nbsp;km on lit streets.</div>
         </div>
-        <div id="navStatus" class="nav-status"><span style="width:8px;height:8px;border-radius:50%;background:var(--muted-2)"></span><span>Sample route shown · press <b>Go live</b> for real OpenStreetMap routing &amp; safety data</span></div>
-        <div id="map"><div class="skel skel-map" id="mapSkel">Loading live map…</div></div>
-        <div class="map-legend">
-          <span><i style="background:#188a5a"></i>Safe</span>
-          <span><i style="background:#f7c948"></i>Caution</span>
-          <span><i style="background:#e5484d"></i>Risk</span>
-          <span><i style="background:#8b5cf6"></i>Guardian</span>
-          <span><i style="background:#2f80d6"></i>Safe Haven</span>
-        </div>
+        <span class="pill pill-green"><span class="d" style="background:var(--green)"></span>Live OSM</span>
       </div>
-      <div class="card pad mt hoverable">
-        <div class="sec-head"><div><div class="sec-title">Dynamic Safety Index · time of day</div><div class="sec-sub">Drag to see how each route's score shifts — the DSI is never static</div></div><span class="pill pill-${HOUR>=19||HOUR<6?'coral':'green'}" id="phasePill"><span class="d" style="background:${ph[1]}"></span>${ph[0]}</span></div>
-        <div class="dsi-time">
-          <span class="dsi-clock" id="dsiClock">${String(HOUR).padStart(2,'0')}:00</span>
-          <input type="range" min="0" max="23" value="${HOUR}" id="dsiRange"/>
-        </div>
-        <div class="dsi-phase" style="margin-top:8px" id="dsiHint">At night, deserted & poorly-lit streets automatically drop in score, rerouting you toward lit, busy corridors.</div>
+
+      <div class="ck-region">
+        <span class="ck-region-lbl">Quick&nbsp;jump</span>
+        <select id="citySel" class="region-sel" title="Jump to a city">${CITIES.map((c,i)=>`<option value="${i}"${c===CITY?' selected':''}>${c.name}</option>`).join('')}</select>
       </div>
-    </div>
-    <div class="col-4">
-      <div class="card pad hoverable" style="position:relative;overflow:hidden">
+
+      <div class="trip">
+        <div class="trip-row">
+          <span class="trip-dot"></span>
+          <div class="ac-wrap"><input id="fromInput" class="trip-in" value="${escq(CITY.from)}" placeholder="Choose starting point" autocomplete="off" spellcheck="false"/><div class="ac-drop" id="fromDrop"></div></div>
+        </div>
+        <div class="trip-line"></div>
+        <div class="trip-row">
+          <span class="trip-dot to"></span>
+          <div class="ac-wrap"><input id="toInput" class="trip-in" value="${escq(CITY.to)}" placeholder="Choose destination" autocomplete="off" spellcheck="false"/><div class="ac-drop" id="toDrop"></div></div>
+        </div>
+        <button class="trip-swap" id="swapBtn" title="Swap start & destination">${svg(IC.route,15)}</button>
+      </div>
+
+      <div class="ck-actions">
+        <button class="loc-btn2" id="geoBtn" title="Use my location">${svg(IC.pin,15)}My location</button>
+        <button class="go-btn2" id="goBtn">${svg(IC.nav,15)}Find safe route</button>
+      </div>
+
+      <div id="navStatus" class="nav-status"><span style="width:8px;height:8px;border-radius:50%;background:var(--muted-2)"></span><span>Type a start &amp; destination — live suggestions appear as you type, then press <b>Find safe route</b>.</span></div>
+
+      <div class="card ck-card" style="position:relative;overflow:hidden">
         <div class="sec-head"><div><div class="sec-title">Journey Safety Score</div><div class="sec-sub" id="scoreSub">Live DSI · ${ph[0].toLowerCase()}</div></div></div>
         <div class="score-row">
           <div style="position:relative">
@@ -400,18 +463,42 @@ function vNav(){
           </div>
         </div>
       </div>
-      <div class="card pad mt">
+
+      <div class="card ck-card">
         <div class="sec-head"><div><div class="sec-title">Route options</div><div class="sec-sub">Prioritise safety or speed</div></div></div>
         <div id="routeOpts" style="display:flex;flex-direction:column;gap:10px"></div>
         <button class="btn-dark" id="startNav">${svg(IC.shield,16)}Start guided navigation</button>
       </div>
-      <div class="card pad mt hoverable">
+
+      <div class="card ck-card">
+        <div class="sec-head"><div><div class="sec-title">Dynamic Safety Index</div><div class="sec-sub">Drag to see how the score shifts by hour</div></div><span class="pill pill-${HOUR>=19||HOUR<6?'coral':'green'}" id="phasePill"><span class="d" style="background:${ph[1]}"></span>${ph[0]}</span></div>
+        <div class="dsi-time">
+          <span class="dsi-clock" id="dsiClock">${String(HOUR).padStart(2,'0')}:00</span>
+          <input type="range" min="0" max="23" value="${HOUR}" id="dsiRange"/>
+        </div>
+        <div class="dsi-phase" style="margin-top:8px" id="dsiHint">At night, deserted &amp; poorly-lit streets automatically drop in score, rerouting you toward lit, busy corridors.</div>
+      </div>
+
+      <div class="card ck-card">
         <div class="sec-head"><div><div class="sec-title">Map data layers</div><div class="sec-sub">Toggle what feeds the DSI</div></div></div>
         <div class="layer-row">
           <div class="layer-tog"><span class="lt-ico tint-yellow">${svg(IC.bulb,16)}</span><div><div class="lt-name">Infrastructure</div><div class="lt-desc">Lights · CCTV · 24/7 shops</div></div><button class="switch on" data-layer="infra"></button></div>
-          <div class="layer-tog"><span class="lt-ico tint-sky">${svg(IC.building,16)}</span><div><div class="lt-name">Official</div><div class="lt-desc">Crime & police records</div></div><button class="switch" data-layer="official"></button></div>
+          <div class="layer-tog"><span class="lt-ico tint-sky">${svg(IC.building,16)}</span><div><div class="lt-name">Official</div><div class="lt-desc">Crime &amp; police records</div></div><button class="switch" data-layer="official"></button></div>
           <div class="layer-tog"><span class="lt-ico tint-coral">${svg(IC.users,16)}</span><div><div class="lt-name">Community</div><div class="lt-desc">Vibe · lighting · crowd</div></div><button class="switch on" data-layer="community"></button></div>
         </div>
+      </div>
+    </aside>
+
+    <div class="mcanvas">
+      <div id="map"><div class="skel skel-map" id="mapSkel">Loading live map…</div></div>
+      <div class="route-flag" id="routeFlag"></div>
+      <button class="map-recenter" id="recenterBtn" title="Recenter route">${svg(IC.compass,19)}</button>
+      <div class="map-legend">
+        <span><i style="background:#12a15f"></i>Safe</span>
+        <span><i style="background:#f7c948"></i>Caution</span>
+        <span><i style="background:#f43f5e"></i>Risk</span>
+        <span><i style="background:#8b5cf6"></i>Guardian</span>
+        <span><i style="background:#0ea5e9"></i>Safe Haven</span>
       </div>
     </div>
   </div>`;
@@ -429,7 +516,7 @@ function renderRoutes(){
 function updateScore(){
   const rs=curRoutes(), r=rs[SELECTED]; if(!r)return; const sc=dsiScore(r);
   const g=document.getElementById('gauge'); if(!g)return;
-  const col=sc>=85?'#188a5a':sc>=70?'#eab308':'#f4643f';
+  const col=sc>=85?'#12a15f':sc>=70?'#f59e0b':'#f4436f';
   g.innerHTML=gauge(sc,{size:150,color:col});
   document.getElementById('scoreNum').textContent=sc;
   document.getElementById('scoreNum').style.color=col;
@@ -441,16 +528,26 @@ function updateScore(){
       ? b('bulb','yellow',r.live.lamps+' streetlights')+b('store','green',r.live.havens+' safe havens')+b('cam','sky',r.live.cctv+' CCTV cameras')
       : b('bulb','yellow','Well-lit streets')+b('users','coral','6 guardians nearby')+b('activity','green','High foot traffic');
   }
+  updateFlag(r,sc,col);
+}
+function updateFlag(r,sc,col){
+  const f=document.getElementById('routeFlag'); if(!f)return;
+  if(!r||!r.live){ f.classList.remove('show'); return; }
+  const km=r.live.km, mins=(r.time||'').replace(/[^0-9]/g,'')||'—';
+  f.innerHTML=`<div class="rf-b"><b>${km.toFixed(1)} km</b><span>Distance</span></div>
+    <div class="rf-sep"></div><div class="rf-b"><b>${mins} min</b><span>Walk</span></div>
+    <div class="rf-sep"></div><div class="rf-b"><b class="rf-score" style="color:${col}">${sc}</b><span>DSI score</span></div>`;
+  f.classList.add('show');
 }
 function drawRoute(){
   if(!MAP)return; const rs=curRoutes(), r=rs[SELECTED]; if(!r)return; const sc=dsiScore(r);
-  const col=sc>=85?'#188a5a':sc>=70?'#eab308':'#f4643f';
+  const col=sc>=85?'#12a15f':sc>=70?'#f59e0b':'#f4436f';
   if(ROUTE_LAYER)MAP.removeLayer(ROUTE_LAYER);
   const dot=(html)=>L.divIcon({className:'',html,iconSize:[18,18],iconAnchor:[9,9]});
   ROUTE_LAYER=L.layerGroup([
     L.polyline(r.path,{color:col,weight:11,opacity:.16,lineCap:'round'}),
     L.polyline(r.path,{color:col,weight:4.5,opacity:.95,lineCap:'round'}),
-    L.marker(r.path[0],{icon:dot('<div style="width:16px;height:16px;border-radius:50%;background:#188a5a;border:3px solid #fff;box-shadow:0 2px 8px rgba(24,138,90,.55)"></div>')}).bindTooltip('Start · '+FROM_LABEL),
+    L.marker(r.path[0],{icon:dot('<div style="width:16px;height:16px;border-radius:50%;background:#12a15f;border:3px solid #fff;box-shadow:0 2px 8px rgba(24,138,90,.55)"></div>')}).bindTooltip('Start · '+FROM_LABEL),
     L.marker(r.path[r.path.length-1],{icon:dot(`<div style="width:16px;height:16px;border-radius:50%;background:${col};border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.25)"></div>`)}).bindTooltip(TO_LABEL),
   ]).addTo(MAP);
   MAP.fitBounds(L.polyline(r.path).getBounds(),{padding:[50,50]});
@@ -463,28 +560,28 @@ function applyCtxLayers(){
     const cap=(a,n)=>a.slice(0,n), byCat=c=>LIVE.pois.filter(p=>p.cat===c);
     if(LAYER_STATE.infra){
       CTX_LAYERS.infra=L.layerGroup([
-        ...cap(byCat('lamp'),80).map(p=>L.marker([p.lat,p.lng],{icon:dot('#eab308',8,.3)}).bindTooltip(p.name||'Streetlight')),
-        ...cap(byCat('cctv'),50).map(p=>L.marker([p.lat,p.lng],{icon:dot('#2f80d6',10)}).bindTooltip(p.name||'CCTV camera')),
+        ...cap(byCat('lamp'),80).map(p=>L.marker([p.lat,p.lng],{icon:dot('#f59e0b',8,.3)}).bindTooltip(p.name||'Streetlight')),
+        ...cap(byCat('cctv'),50).map(p=>L.marker([p.lat,p.lng],{icon:dot('#0ea5e9',10)}).bindTooltip(p.name||'CCTV camera')),
       ]).addTo(MAP);
     }
     if(LAYER_STATE.official){
-      CTX_LAYERS.official=L.layerGroup(cap(byCat('police'),40).map(p=>L.marker([p.lat,p.lng],{icon:dot('#123227',12)}).bindTooltip('Police · '+(p.name||'station')))).addTo(MAP);
+      CTX_LAYERS.official=L.layerGroup(cap(byCat('police'),40).map(p=>L.marker([p.lat,p.lng],{icon:dot('#0e1533',12)}).bindTooltip('Police · '+(p.name||'station')))).addTo(MAP);
     }
     if(LAYER_STATE.community){
-      CTX_LAYERS.community=L.layerGroup(cap(byCat('haven'),60).map(p=>L.marker([p.lat,p.lng],{icon:dot('#188a5a',12)}).bindTooltip('Safe Haven · '+(p.name||'24/7 spot')))).addTo(MAP);
+      CTX_LAYERS.community=L.layerGroup(cap(byCat('haven'),60).map(p=>L.marker([p.lat,p.lng],{icon:dot('#12a15f',12)}).bindTooltip('Safe Haven · '+(p.name||'24/7 spot')))).addTo(MAP);
     }
     return;
   }
   if(LAYER_STATE.infra){
     CTX_LAYERS.infra=L.layerGroup([
-      L.marker([28.6205,77.2200],{icon:dot('#eab308')}).bindTooltip('Working streetlight'),
-      L.marker([28.6262,77.2180],{icon:dot('#2f80d6')}).bindTooltip('CCTV camera'),
-      L.marker([28.6230,77.2186],{icon:dot('#2f80d6')}).bindTooltip('Safe Haven · Apollo 24/7 Pharmacy'),
+      L.marker([28.6205,77.2200],{icon:dot('#f59e0b')}).bindTooltip('Working streetlight'),
+      L.marker([28.6262,77.2180],{icon:dot('#0ea5e9')}).bindTooltip('CCTV camera'),
+      L.marker([28.6230,77.2186],{icon:dot('#0ea5e9')}).bindTooltip('Safe Haven · Apollo 24/7 Pharmacy'),
     ]).addTo(MAP);
   }
   if(LAYER_STATE.official){
     CTX_LAYERS.official=L.layerGroup([
-      L.circle([28.6172,77.2262],{radius:300,color:'#e5484d',fillColor:'#e5484d',fillOpacity:.1,weight:1}).bindTooltip('Historical incident cluster'),
+      L.circle([28.6172,77.2262],{radius:300,color:'#f43f5e',fillColor:'#f43f5e',fillOpacity:.1,weight:1}).bindTooltip('Historical incident cluster'),
     ]).addTo(MAP);
   }
   if(LAYER_STATE.community){
@@ -500,6 +597,7 @@ function initMap(){
   MAP=L.map('map',{zoomControl:true,attributionControl:true}).setView(CITY.c,14);
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'© OpenStreetMap © CARTO · SafeSphere',maxZoom:20}).addTo(MAP);
   applyCtxLayers(); drawRoute();
+  setTimeout(()=>{try{MAP.invalidateSize();}catch(e){}},220);
 }
 function postNav(){
   document.getElementById('gauge').innerHTML=gauge(98,{size:150});
@@ -519,12 +617,24 @@ function postNav(){
     toast((LAYER_STATE[k]?'Enabled ':'Disabled ')+k+' layer');
   }));
   document.getElementById('goBtn').addEventListener('click',runLive);
-  ['fromInput','toInput'].forEach(id=>{const el=document.getElementById(id); if(el)el.addEventListener('keydown',e=>{if(e.key==='Enter')runLive();});});
+  // live place autocomplete on both fields (any location in India)
+  attachAutocomplete(document.getElementById('fromInput'),'fromDrop',p=>{FROM_PT=p;});
+  attachAutocomplete(document.getElementById('toInput'),'toDrop',p=>{TO_PT=p;});
+  const swap=document.getElementById('swapBtn');
+  if(swap)swap.addEventListener('click',()=>{
+    const fi=document.getElementById('fromInput'), ti=document.getElementById('toInput');
+    const tv=fi.value; fi.value=ti.value; ti.value=tv;
+    const tp=FROM_PT; FROM_PT=TO_PT; TO_PT=tp;
+    const tr=fi.dataset.resolved; fi.dataset.resolved=ti.dataset.resolved||''; ti.dataset.resolved=tr||'';
+    if(fi.value&&ti.value)runLive();
+  });
+  const rc=document.getElementById('recenterBtn');
+  if(rc)rc.addEventListener('click',()=>{ if(MAP){ if(ROUTE_LAYER){try{MAP.fitBounds(L.polyline(curRoutes()[SELECTED].path).getBounds(),{padding:[60,60]});}catch(e){MAP.setView(CITY.c,14);} } else MAP.setView(CITY.c,14);} });
   const cs=document.getElementById('citySel');
   if(cs)cs.addEventListener('change',()=>{
     CITY=CITIES[+cs.value];
-    document.getElementById('fromInput').value=CITY.from;
-    document.getElementById('toInput').value=CITY.to;
+    const fi=document.getElementById('fromInput'), ti=document.getElementById('toInput');
+    fi.value=CITY.from; ti.value=CITY.to; fi.dataset.resolved=''; ti.dataset.resolved=''; FROM_PT=null; TO_PT=null;
     LIVE.active=false; LIVE.pois=null;
     if(MAP)MAP.setView(CITY.c,13);
     setNavStatus('Loading live data for '+CITY.name+'…','load');
@@ -536,7 +646,8 @@ function postNav(){
     setNavStatus('Getting your location…','load'); gb.disabled=true;
     navigator.geolocation.getCurrentPosition(pos=>{
       USER_LOC={lat:pos.coords.latitude,lng:pos.coords.longitude};
-      document.getElementById('fromInput').value='My location';
+      const fi=document.getElementById('fromInput'); fi.value='My location'; fi.dataset.resolved='1';
+      FROM_PT={lat:USER_LOC.lat,lng:USER_LOC.lng,name:'My location'};
       if(MAP)MAP.setView([USER_LOC.lat,USER_LOC.lng],15);
       gb.disabled=false; toast('Located you — routing from here'); runLive();
     },err=>{
@@ -550,19 +661,74 @@ function postNav(){
 
 /* ================= VIEW: SOS & GUARDIAN ================= */
 const CONTACTS=[['Amma','Mother · +91 •••• 21','green'],['Priya','Roommate · +91 •••• 88','coral'],['Campus Security','24/7 desk','sky']];
+const HELPLINES=[
+  {short:'Emergency 112',name:'Emergency Response · 112',color:'coral',ico:'shield',
+   greet:"SafeSphere Emergency Desk here. I can see you're on a live safety session. Are you in immediate danger, or do you need guidance?",
+   quick:['I feel unsafe','Someone is following me','I need help now','Share my location'],
+   replies:[
+     [['follow','stalk','behind','chasing'],"Stay calm and keep moving toward a lit, busy area. I'm dispatching a patrol to your live GPS now and alerting your trusted circle. Can you reach the Apollo 24/7 (120 m away)?"],
+     [['unsafe','scared','afraid','danger','help'],"You're not alone — I'm with you. A responder is being routed to your location. Keep your phone unlocked and stay on this chat. Would you like me to start audio recording for evidence?"],
+     [['location','gps','where','share'],"📍 Your live location is now shared with the 112 control room and your trusted circle for the next 60 minutes. A unit has your coordinates."],
+     [['medical','hurt','injured','bleeding','pain'],"Understood — routing this to medical (108) as well. Try to stay still if you're injured. Help is on the way to your live GPS."]],
+   fallback:"Copied. I've logged that and a responder is monitoring your session live. Stay on this chat — you can also press the big SOS button any time to escalate instantly."},
+  {short:'Women 1091',name:'Women Helpline · 1091',color:'violet',ico:'heart',
+   greet:"Women's Helpline 1091 — you're safe to talk here. Everything you share is confidential. What's happening?",
+   quick:['Someone is harassing me','I feel threatened','I want to file a report','Connect me to a counsellor'],
+   replies:[
+     [['harass','touch','stare','comment','follow'],"I'm so sorry you're going through this. That is not your fault. I'm noting the details and can connect you to a female officer right now. Are you in a safe spot to talk?"],
+     [['report','complaint','file','fir'],"I can start a confidential incident report and attach your live location + timeline. A women's cell officer will follow up. Shall I begin the report?"],
+     [['counsel','talk','scared','alone'],"A trained counsellor is available 24/7. I'm connecting you now — you can stay anonymous. You're doing the right thing by reaching out."]],
+   fallback:"Thank you for telling me. You're safe here and this stays confidential. A support officer is with you on this session — how can I help further?"},
+  {short:'Medical 108',name:'Ambulance & Medical · 108',color:'green',ico:'heart',
+   greet:"108 Medical Response. Tell me what's wrong and I'll dispatch the nearest ambulance to your live location.",
+   quick:['Send an ambulance','Someone collapsed','I feel dizzy','Nearest hospital'],
+   replies:[
+     [['ambulance','collapse','unconscious','breathing','faint'],"🚑 Ambulance dispatched to your live GPS — ETA ~7 min. Keep the person on their side and airway clear. Stay on the line, I'll guide you."],
+     [['dizzy','weak','pain','sick'],"Sit down somewhere safe and sip water if you can. I've flagged the nearest hospital (Apollo, 1.2 km). Would you like an ambulance dispatched?"],
+     [['hospital','clinic','doctor'],"Nearest 24/7 hospital: Apollo, 1.2 km on a green-safe route. I can navigate you there or send transport — which do you prefer?"]],
+   fallback:"Noted. A paramedic is reviewing your session. If this becomes an emergency, tap 'Send an ambulance' and I'll dispatch immediately."},
+  {short:'Campus Desk',name:'Campus Security · 24/7',color:'sky',ico:'building',
+   greet:"Campus Security desk here, monitoring 24/7. I can send a guard escort or a shuttle to your location. What do you need?",
+   quick:['Send an escort','I missed the last bus','Someone suspicious nearby','Walk me to the gate'],
+   replies:[
+     [['escort','walk','accompany','alone'],"On it — a security escort is heading to your live location now. Stay where there's light. Share any landmark you can see?"],
+     [['bus','shuttle','transport','ride','late'],"The night shuttle can pick you up. I'm booking it to your GPS — ETA ~6 min. Please wait inside a lit, populated area."],
+     [['suspicious','stranger','following','scared'],"Thanks for reporting. A guard is being alerted to your zone and I'm watching your session live. Move toward the nearest Guardian Node if you can."]],
+   fallback:"Got it — logged with the campus desk. A guard is monitoring your live session. Tap 'Send an escort' any time and we'll come to you."}
+];
 function vSos(){
   return `
   <div class="grid g12">
     <div class="col-5">
       <div class="card hoverable" style="overflow:hidden">
-        <div class="sos-hero" style="background:radial-gradient(circle at 50% 0,#fdece6,#fff)">
+        <div class="sos-hero" style="background:radial-gradient(circle at 50% 0,var(--coral-50),#fff)">
           <button class="sos-btn-big" id="sosBig">SOS</button>
           <div class="sos-sub">Press & hold to alert your trusted circle and the nearest Guardian Node with your live location.</div>
           <div style="display:flex;gap:10px;margin-top:22px;width:100%">
             <button class="chk chk-ok" id="shareLoc">${svg(IC.pin,15)} Share live location</button>
-            <button class="chk" style="background:#123227;color:#fff" id="fakeCall">${svg(IC.phone,15)} Fake call</button>
+            <button class="chk" style="background:var(--ink);color:#fff" id="fakeCall">${svg(IC.phone,15)} Fake call</button>
           </div>
         </div>
+      </div>
+      <div class="card hoverable mt hl-card" style="overflow:hidden">
+        <div class="hl-head">
+          <span class="hl-av" id="hlAv">${svg(IC.shield,18)}</span>
+          <div style="flex:1;min-width:0">
+            <div class="hl-name" id="hlName">Emergency Response · 112</div>
+            <div class="hl-status"><span class="hl-dot"></span><span id="hlStatus">Online · avg reply 8s</span></div>
+          </div>
+          <span class="hl-enc" title="End-to-end encrypted">${svg(IC.lock,13)} Encrypted</span>
+        </div>
+        <div class="hl-tabs" id="hlTabs">
+          ${HELPLINES.map((h,i)=>`<button class="hl-tab${i===0?' on':''}" data-hl="${i}">${h.short}</button>`).join('')}
+        </div>
+        <div class="hl-thread" id="hlThread"></div>
+        <div class="hl-quick" id="hlQuick"></div>
+        <div class="hl-input">
+          <input id="hlMsg" type="text" placeholder="Type a message to the helpline…" autocomplete="off"/>
+          <button id="hlSend" class="hl-send">${svg(IC.send,17)}</button>
+        </div>
+        <div class="hl-note">${svg(IC.warn,12)} Demo — simulated responder. In a real emergency, dial <b>112</b>.</div>
       </div>
     </div>
     <div class="col-7">
@@ -613,6 +779,66 @@ function postSos(){
   document.getElementById('fakeCall').addEventListener('click',()=>toast('Fake call incoming in 5s…'));
   document.getElementById('imOk').addEventListener('click',()=>toast("Glad you're safe — monitoring continues"));
   document.getElementById('needHelp').addEventListener('click',()=>toast('🚨 Help dispatched to your live location'));
+  initHelpline();
+}
+let HL_IDX=0;
+function initHelpline(){
+  const thread=document.getElementById('hlThread'), quick=document.getElementById('hlQuick'),
+        input=document.getElementById('hlMsg'), send=document.getElementById('hlSend'),
+        tabs=document.getElementById('hlTabs');
+  if(!thread) return;
+  const now=()=>new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  const scroll=()=>{thread.scrollTop=thread.scrollHeight;};
+  function bubble(txt,who){
+    const el=document.createElement('div');
+    el.className='hl-msg '+(who==='me'?'me':'them');
+    el.innerHTML=(who==='me'?'':`<span class="hl-mav">${svg(IC[HELPLINES[HL_IDX].ico],13)}</span>`)+
+      `<div class="hl-bub">${txt}<span class="hl-time">${now()}</span></div>`;
+    thread.appendChild(el); scroll(); return el;
+  }
+  function typing(){
+    const el=document.createElement('div');
+    el.className='hl-msg them'; el.id='hlTyping';
+    el.innerHTML=`<span class="hl-mav">${svg(IC[HELPLINES[HL_IDX].ico],13)}</span><div class="hl-bub hl-typing"><span></span><span></span><span></span></div>`;
+    thread.appendChild(el); scroll();
+  }
+  function answer(text){
+    const h=HELPLINES[HL_IDX], q=text.toLowerCase();
+    for(const [keys,resp] of h.replies){ if(keys.some(k=>q.includes(k))) return resp; }
+    return h.fallback;
+  }
+  function agentReply(text){
+    typing();
+    setTimeout(()=>{
+      const t=document.getElementById('hlTyping'); if(t) t.remove();
+      bubble(answer(text),'them');
+    },900+Math.random()*700);
+  }
+  function renderQuick(){
+    const h=HELPLINES[HL_IDX];
+    quick.innerHTML=h.quick.map(q=>`<button class="hl-chip">${q}</button>`).join('');
+    quick.querySelectorAll('.hl-chip').forEach(b=>b.addEventListener('click',()=>userSend(b.textContent)));
+  }
+  function userSend(text){
+    text=(text||'').trim(); if(!text) return;
+    bubble(escq(text),'me'); input.value=''; agentReply(text);
+  }
+  function loadHL(i){
+    HL_IDX=i;
+    const h=HELPLINES[i];
+    document.getElementById('hlName').textContent=h.name;
+    document.getElementById('hlStatus').textContent='Online · avg reply 8s';
+    const av=document.getElementById('hlAv');
+    av.innerHTML=svg(IC[h.ico],18); av.style.background=TONE[h.color];
+    thread.innerHTML=''; bubble(h.greet,'them'); renderQuick();
+  }
+  tabs.querySelectorAll('.hl-tab').forEach(b=>b.addEventListener('click',()=>{
+    tabs.querySelectorAll('.hl-tab').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on'); loadHL(+b.dataset.hl);
+  }));
+  send.addEventListener('click',()=>userSend(input.value));
+  input.addEventListener('keydown',e=>{ if(e.key==='Enter') userSend(input.value); });
+  loadHL(0);
 }
 
 /* ================= VIEW: COMMUNITY REPORTS ================= */
@@ -627,10 +853,10 @@ function vCommunity(){
   ];
   return `
   <div class="grid g4">
-    ${kpiCard({icon:'megaphone',tint:'coral',label:'Reports Today',value:'482',delta:'+12%',spark:[20,26,30,28,34,40,44,48,46,48],sparkColor:'#f4643f'})}
-    ${kpiCard({icon:'bulb',tint:'yellow',label:'Infra Issues Flagged',value:'96',delta:'+8',spark:[6,7,7,8,8,9,9,9,10,10],sparkColor:'#eab308'})}
-    ${kpiCard({icon:'shield',tint:'green',label:'Verified Reports',value:'91%',delta:'+2.4%',spark:[80,82,84,85,86,88,89,90,90,91],sparkColor:'#188a5a'})}
-    ${kpiCard({icon:'users',tint:'sky',label:'Active Contributors',value:'12.4k',delta:'+310',spark:[8,9,9,10,10,11,11,12,12,12],sparkColor:'#2f80d6'})}
+    ${kpiCard({icon:'megaphone',tint:'coral',label:'Reports Today',value:'482',delta:'+12%',spark:[20,26,30,28,34,40,44,48,46,48],sparkColor:'#f4436f'})}
+    ${kpiCard({icon:'bulb',tint:'yellow',label:'Infra Issues Flagged',value:'96',delta:'+8',spark:[6,7,7,8,8,9,9,9,10,10],sparkColor:'#f59e0b'})}
+    ${kpiCard({icon:'shield',tint:'green',label:'Verified Reports',value:'91%',delta:'+2.4%',spark:[80,82,84,85,86,88,89,90,90,91],sparkColor:'#12a15f'})}
+    ${kpiCard({icon:'users',tint:'sky',label:'Active Contributors',value:'12.4k',delta:'+310',spark:[8,9,9,10,10,11,11,12,12,12],sparkColor:'#0ea5e9'})}
   </div>
   <div class="grid g12 mt">
     <div class="col-5">
@@ -658,12 +884,12 @@ function vCommunity(){
         <div class="card pad hoverable">
           <div class="sec-head"><div><div class="sec-title">Report Categories</div><div class="sec-sub">Last 30 days</div></div></div>
           <div class="donut-wrap">
-            <div>${donut([{v:44,c:'#f4643f'},{v:30,c:'#eab308'},{v:18,c:'#188a5a'},{v:8,c:'#2f80d6'}],140)}</div>
+            <div>${donut([{v:44,c:'#f4436f'},{v:30,c:'#f59e0b'},{v:18,c:'#12a15f'},{v:8,c:'#0ea5e9'}],140)}</div>
             <ul class="legend">
-              <li><i style="background:#f4643f"></i>Vibe / safety<b>44%</b></li>
-              <li><i style="background:#eab308"></i>Lighting<b>30%</b></li>
-              <li><i style="background:#188a5a"></i>Positive<b>18%</b></li>
-              <li><i style="background:#2f80d6"></i>Infrastructure<b>8%</b></li>
+              <li><i style="background:#f4436f"></i>Vibe / safety<b>44%</b></li>
+              <li><i style="background:#f59e0b"></i>Lighting<b>30%</b></li>
+              <li><i style="background:#12a15f"></i>Positive<b>18%</b></li>
+              <li><i style="background:#0ea5e9"></i>Infrastructure<b>8%</b></li>
             </ul>
           </div>
         </div>
@@ -697,7 +923,7 @@ function vCity(){
     </div>
     <div class="grid g4" style="margin-top:6px">
       ${[['bulb','yellow','Street lamps','clLamp'],['cam','sky','CCTV cameras','clCctv'],['shield','green','Police stations','clPolice'],['store','coral','Safe havens','clHaven']].map(x=>`
-        <div style="border:1px solid var(--stroke);border-radius:14px;padding:14px">
+        <div class="stat-tile">
           <div class="kpi-ico tint-${x[1]}" style="width:38px;height:38px">${svg(IC[x[0]],18)}</div>
           <div style="font-size:26px;font-weight:900;margin-top:10px" id="${x[3]}"><span class="count-load skel"></span></div>
           <div style="font-size:12px;font-weight:700;color:var(--ink-2)">${x[2]}</div>
@@ -705,10 +931,10 @@ function vCity(){
     </div>
   </div>
   <div class="grid g4">
-    ${kpiCard({icon:'shield',tint:'green',label:'City Safety Index',value:'<span id="clIndex">86.2</span>',delta:'live',spark:[70,72,74,73,78,80,79,83,85,86],sparkColor:'#188a5a'})}
-    ${kpiCard({icon:'bulb',tint:'yellow',label:'Broken Streetlights',value:'214',delta:'-38',spark:[280,272,266,258,250,244,238,228,220,214],sparkColor:'#eab308'})}
-    ${kpiCard({icon:'warn',tint:'coral',label:'High-Risk Zones',value:'7',delta:'-2',spark:[12,11,11,10,9,9,8,8,7,7],sparkColor:'#f4643f'})}
-    ${kpiCard({icon:'heart',tint:'sky',label:'Women Mobility ↑',value:'+18%',delta:'YoY',spark:[100,103,105,108,110,112,114,116,117,118],sparkColor:'#2f80d6'})}
+    ${kpiCard({icon:'shield',tint:'green',label:'City Safety Index',value:'<span id="clIndex">86.2</span>',delta:'live',spark:[70,72,74,73,78,80,79,83,85,86],sparkColor:'#12a15f'})}
+    ${kpiCard({icon:'bulb',tint:'yellow',label:'Broken Streetlights',value:'214',delta:'-38',spark:[280,272,266,258,250,244,238,228,220,214],sparkColor:'#f59e0b'})}
+    ${kpiCard({icon:'warn',tint:'coral',label:'High-Risk Zones',value:'7',delta:'-2',spark:[12,11,11,10,9,9,8,8,7,7],sparkColor:'#f4436f'})}
+    ${kpiCard({icon:'heart',tint:'sky',label:'Women Mobility ↑',value:'+18%',delta:'YoY',spark:[100,103,105,108,110,112,114,116,117,118],sparkColor:'#0ea5e9'})}
   </div>
   <div class="grid g12 mt">
     <div class="col-8">
@@ -721,7 +947,7 @@ function vCity(){
         <div class="sec-head"><div><div class="sec-title">Data for Change — Infrastructure Gaps</div><div class="sec-sub">Shared with the Municipal Corporation: exactly which street needs a lamp</div></div><button class="btn-ghost" style="width:auto;margin:0;padding:8px 14px" id="exportGov">${svg(IC.send,15)}Export report</button></div>
         <div class="grid g3">
           ${[['bulb','yellow','Streetlights down','214','Rajpath · Janpath · Ring Rd'],['cam','sky','CCTV blind spots','63','Paharganj underpass'],['store','green','Guardian Node gaps','18','Outer Ring Rd needs havens']].map(x=>`
-            <div style="border:1px solid var(--stroke);border-radius:14px;padding:14px">
+            <div class="stat-tile">
               <div class="kpi-ico tint-${x[1]}" style="width:38px;height:38px">${svg(IC[x[0]],18)}</div>
               <div style="font-size:22px;font-weight:900;margin-top:10px">${x[3]}</div>
               <div style="font-size:12.5px;font-weight:700;color:var(--ink-2)">${x[2]}</div>
@@ -743,8 +969,8 @@ function vCity(){
       <div class="card pad mt hoverable">
         <div class="sec-head"><div><div class="sec-title">Incident Mix</div><div class="sec-sub">Resolved via prevention</div></div></div>
         <div class="donut-wrap">
-          <div>${donut([{v:58,c:'#188a5a'},{v:26,c:'#2f80d6'},{v:11,c:'#eab308'},{v:5,c:'#e5484d'}],130)}</div>
-          <ul class="legend"><li><i style="background:#188a5a"></i>Rerouted safely<b>58%</b></li><li><i style="background:#2f80d6"></i>Monitored<b>26%</b></li><li><i style="background:#eab308"></i>Guardian visit<b>11%</b></li><li><i style="background:#e5484d"></i>SOS escalated<b>5%</b></li></ul>
+          <div>${donut([{v:58,c:'#12a15f'},{v:26,c:'#0ea5e9'},{v:11,c:'#f59e0b'},{v:5,c:'#f43f5e'}],130)}</div>
+          <ul class="legend"><li><i style="background:#12a15f"></i>Rerouted safely<b>58%</b></li><li><i style="background:#0ea5e9"></i>Monitored<b>26%</b></li><li><i style="background:#f59e0b"></i>Guardian visit<b>11%</b></li><li><i style="background:#f43f5e"></i>SOS escalated<b>5%</b></li></ul>
         </div>
       </div>
     </div>
@@ -784,10 +1010,10 @@ function vHavens(){
   ];
   return `
   <div class="grid g4">
-    ${kpiCard({icon:'haven',tint:'green',label:'Certified Havens',value:'1,340',delta:'+28',spark:[10,12,14,16,18,20,23,25,27,28],sparkColor:'#188a5a'})}
-    ${kpiCard({icon:'check',tint:'sky',label:'Verification Rate',value:'94%',delta:'+1.8%',spark:[86,88,89,90,91,92,92,93,94,94],sparkColor:'#2f80d6'})}
-    ${kpiCard({icon:'users',tint:'coral',label:'Haven Visits · mo',value:'8,910',delta:'+12%',spark:[40,44,48,52,56,60,66,72,80,89],sparkColor:'#f4643f'})}
-    ${kpiCard({icon:'shield',tint:'yellow',label:'Avg Trust Rating',value:'4.8',delta:'+0.2',spark:[42,43,44,45,46,46,47,47,48,48],sparkColor:'#eab308'})}
+    ${kpiCard({icon:'haven',tint:'green',label:'Certified Havens',value:'1,340',delta:'+28',spark:[10,12,14,16,18,20,23,25,27,28],sparkColor:'#12a15f'})}
+    ${kpiCard({icon:'check',tint:'sky',label:'Verification Rate',value:'94%',delta:'+1.8%',spark:[86,88,89,90,91,92,92,93,94,94],sparkColor:'#0ea5e9'})}
+    ${kpiCard({icon:'users',tint:'coral',label:'Haven Visits · mo',value:'8,910',delta:'+12%',spark:[40,44,48,52,56,60,66,72,80,89],sparkColor:'#f4436f'})}
+    ${kpiCard({icon:'shield',tint:'yellow',label:'Avg Trust Rating',value:'4.8',delta:'+0.2',spark:[42,43,44,45,46,46,47,47,48,48],sparkColor:'#f59e0b'})}
   </div>
   <div class="grid g12 mt">
     <div class="col-8">
@@ -799,7 +1025,7 @@ function vHavens(){
       </div>
     </div>
     <div class="col-4">
-      <div class="card pad hoverable" style="background:linear-gradient(135deg,#188a5a,#0f6e46);color:#fff;position:relative;overflow:hidden">
+      <div class="card pad hoverable" style="background:linear-gradient(135deg,#5b50ea,#4034c8);color:#fff;position:relative;overflow:hidden">
         <div style="position:absolute;right:-24px;top:-24px;width:120px;height:120px;border-radius:50%;background:rgba(247,201,72,.25)"></div>
         ${svg(IC.store,22)}
         <div style="font-size:17px;font-weight:900;margin-top:12px">Become a Safe Haven</div>
@@ -837,10 +1063,10 @@ function vApi(){
 console.log(route.safetyScore); <span class="c">// 98</span>`;
   return `
   <div class="grid g4">
-    ${kpiCard({icon:'activity',tint:'green',label:'API Calls · 24h',value:'1.24M',delta:'+8.1%',spark:[30,34,32,38,40,44,46,50,54,58],sparkColor:'#188a5a'})}
-    ${kpiCard({icon:'bolt',tint:'yellow',label:'Avg Latency',value:'86ms',delta:'-12ms',spark:[110,104,100,98,94,92,90,88,86,86],sparkColor:'#eab308'})}
-    ${kpiCard({icon:'check',tint:'sky',label:'Uptime · 30d',value:'99.98%',delta:'SLA',spark:[99,100,100,99,100,100,100,99,100,100],sparkColor:'#2f80d6'})}
-    ${kpiCard({icon:'plug',tint:'coral',label:'Active Integrations',value:'27',delta:'+3',spark:[18,19,20,21,22,23,24,25,26,27],sparkColor:'#f4643f'})}
+    ${kpiCard({icon:'activity',tint:'green',label:'API Calls · 24h',value:'1.24M',delta:'+8.1%',spark:[30,34,32,38,40,44,46,50,54,58],sparkColor:'#12a15f'})}
+    ${kpiCard({icon:'bolt',tint:'yellow',label:'Avg Latency',value:'86ms',delta:'-12ms',spark:[110,104,100,98,94,92,90,88,86,86],sparkColor:'#f59e0b'})}
+    ${kpiCard({icon:'check',tint:'sky',label:'Uptime · 30d',value:'99.98%',delta:'SLA',spark:[99,100,100,99,100,100,100,99,100,100],sparkColor:'#0ea5e9'})}
+    ${kpiCard({icon:'plug',tint:'coral',label:'Active Integrations',value:'27',delta:'+3',spark:[18,19,20,21,22,23,24,25,26,27],sparkColor:'#f4436f'})}
   </div>
   <div class="grid g12 mt">
     <div class="col-5">
@@ -854,13 +1080,13 @@ console.log(route.safetyScore); <span class="c">// 98</span>`;
       </div>
       <div class="card pad mt hoverable">
         <div class="sec-head"><div><div class="sec-title">Partner Integrations</div><div class="sec-sub">Safer routes for their drivers & customers</div></div></div>
-        ${[['Uber','U','#123227','Driver & rider safe-route add-on'],['Zomato','Z','#e5484d','Late-night delivery routing'],['City Transit','C','#2f80d6','Bus-stop last-mile safety']].map(p=>`<div class="partner" style="margin-bottom:10px"><span class="pl" style="background:${p[2]}">${p[1]}</span><div><div style="font-size:13.5px;font-weight:800">${p[0]}</div><div style="font-size:11.5px;color:var(--muted-2)">${p[3]}</div></div><span class="pill pill-green" style="margin-left:auto">Connected</span></div>`).join('')}
+        ${[['Uber','U','#0e1533','Driver & rider safe-route add-on'],['Zomato','Z','#f43f5e','Late-night delivery routing'],['City Transit','C','#0ea5e9','Bus-stop last-mile safety']].map(p=>`<div class="partner" style="margin-bottom:10px"><span class="pl" style="background:${p[2]}">${p[1]}</span><div><div style="font-size:13.5px;font-weight:800">${p[0]}</div><div style="font-size:11.5px;color:var(--muted-2)">${p[3]}</div></div><span class="pill pill-green" style="margin-left:auto">Connected</span></div>`).join('')}
       </div>
     </div>
     <div class="col-7">
       <div class="card pad hoverable">
         <div class="sec-head"><div><div class="sec-title">Quickstart · Node SDK</div><div class="sec-sub">Plan a DSI-aware safe corridor in 6 lines</div></div><span class="pill pill-slate">Docs</span></div>
-        <div class="code-block">${code}</div>
+        <div class="code-wrap"><div class="code-top"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="ct-label">safesphere · quickstart.ts</span></div><div class="code-block">${code}</div></div>
         <div class="mini-grid">
           <div class="mini"><div class="t">${svg(IC.plug,14)}Webhooks</div><div class="v">3 active</div></div>
           <div class="mini"><div class="t">${svg(IC.globe,14)}Env</div><div class="v">Production</div></div>
@@ -871,7 +1097,7 @@ console.log(route.safetyScore); <span class="c">// 98</span>`;
         <div class="sec-head"><div><div class="sec-title">Revenue Model</div><div class="sec-sub">How the platform sustains itself</div></div></div>
         <div class="grid g3">
           ${[['activity','green','Data Licensing','Safety scores sold to ride-hailing apps','$0.40 / 1k calls'],['store','yellow','Verification Fees','Shops pay to be certified Safe Havens','$49 / mo'],['building','sky','Gov. Data Deals','Infrastructure insights for city councils','Enterprise']].map(r=>`
-            <div style="border:1px solid var(--stroke);border-radius:14px;padding:14px"><div class="kpi-ico tint-${r[1]}" style="width:38px;height:38px">${svg(IC[r[0]],18)}</div><div style="font-size:13.5px;font-weight:800;margin-top:10px">${r[2]}</div><div style="font-size:11.5px;color:var(--muted-2);margin-top:3px;line-height:1.45">${r[3]}</div><div class="pill pill-${r[1]}" style="margin-top:10px">${r[4]}</div></div>`).join('')}
+            <div class="stat-tile"><div class="kpi-ico tint-${r[1]}" style="width:38px;height:38px">${svg(IC[r[0]],18)}</div><div style="font-size:13.5px;font-weight:800;margin-top:10px">${r[2]}</div><div style="font-size:11.5px;color:var(--muted-2);margin-top:3px;line-height:1.45">${r[3]}</div><div class="pill pill-${r[1]}" style="margin-top:10px">${r[4]}</div></div>`).join('')}
         </div>
       </div>
       <div class="card pad mt hoverable">
@@ -885,7 +1111,7 @@ function postApi(){
   document.querySelectorAll('[data-copy]').forEach(el=>el.addEventListener('click',()=>{
     const btn=el.querySelector('button');
     try{navigator.clipboard&&navigator.clipboard.writeText(el.dataset.copy);}catch(e){}
-    btn.innerHTML=svg(IC.check,16); btn.style.color='#188a5a';
+    btn.innerHTML=svg(IC.check,16); btn.style.color='#12a15f';
     setTimeout(()=>{btn.innerHTML=svg(IC.copy,16);btn.style.color='';},1300);
     toast('Copied to clipboard');
   }));
@@ -927,10 +1153,10 @@ function renderLanding(){
   </nav>`;
 
   const routeSvg=`<svg class="route" viewBox="0 0 500 430" preserveAspectRatio="none">
-    <path d="M60 360 C140 330 150 250 230 235 C315 219 320 150 420 120" fill="none" stroke="#188a5a" stroke-width="16" opacity=".15" stroke-linecap="round"/>
-    <path d="M60 360 C140 330 150 250 230 235 C315 219 320 150 420 120" fill="none" stroke="#188a5a" stroke-width="5" stroke-linecap="round" stroke-dasharray="1 14"/>
-    <circle cx="60" cy="360" r="10" fill="#188a5a" stroke="#fff" stroke-width="4"/>
-    <circle cx="420" cy="120" r="10" fill="#f4643f" stroke="#fff" stroke-width="4"/>
+    <path d="M60 360 C140 330 150 250 230 235 C315 219 320 150 420 120" fill="none" stroke="#12a15f" stroke-width="16" opacity=".15" stroke-linecap="round"/>
+    <path d="M60 360 C140 330 150 250 230 235 C315 219 320 150 420 120" fill="none" stroke="#12a15f" stroke-width="5" stroke-linecap="round" stroke-dasharray="1 14"/>
+    <circle cx="60" cy="360" r="10" fill="#12a15f" stroke="#fff" stroke-width="4"/>
+    <circle cx="420" cy="120" r="10" fill="#f4436f" stroke="#fff" stroke-width="4"/>
   </svg>`;
   const hero=`
   <div class="wrap">
