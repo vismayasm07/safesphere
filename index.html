@@ -685,6 +685,8 @@ input,select{font-family:inherit}
 .tint-yellow{background:linear-gradient(140deg,var(--yellow-50),#fffaf0);color:var(--yellow-2)}
 .tint-sky{background:linear-gradient(140deg,var(--sky-50),#f0faff);color:var(--sky)}
 .tint-violet{background:linear-gradient(140deg,#efeaff,#f7f4ff);color:var(--violet)}
+.tint-teal{background:linear-gradient(140deg,#d2f5ef,#effdfb);color:#0d9488}
+.tint-rose{background:linear-gradient(140deg,#ffe1ea,#fff5f8);color:#e11d48}
 
 /* KPI cards — top accent + interactive icon */
 .kpi{position:relative;overflow:hidden}
@@ -775,7 +777,40 @@ input,select{font-family:inherit}
 .hl-note{display:flex;align-items:center;gap:6px;justify-content:center;padding:9px 14px;font-size:10.5px;font-weight:600;color:var(--muted-2);background:var(--yellow-50);border-top:1px solid var(--stroke)}
 .hl-note b{color:var(--ink-2);font-weight:800}
 .hl-note svg{width:12px;height:12px;color:var(--yellow-2);flex:none}
-</style>
+
+/* ============ LANDING LIVE MAP ============ */
+.lmap-card{position:relative;border-radius:26px;overflow:hidden;border:1px solid var(--stroke);box-shadow:var(--sh-lift);background:#e4eee6}
+#lmap{height:480px;width:100%;z-index:1}
+.lmap-skel{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:10px;font-size:13px;font-weight:600;color:var(--muted);background:linear-gradient(180deg,#eef3f0,#e4eee6);z-index:5}
+.lspin{width:18px;height:18px;border-radius:50%;border:2.5px solid var(--green-100);border-top-color:var(--green);animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.lmap-badge{position:absolute;top:18px;right:18px;z-index:600;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);border:1px solid var(--stroke);border-radius:18px;padding:14px 18px;box-shadow:var(--sh-lift);text-align:center;pointer-events:none}
+.lmap-badge .lab{font-size:9.5px;font-weight:800;letter-spacing:.14em;color:var(--muted-2)}
+.lmap-badge .num{font-size:34px;font-weight:900;line-height:1;letter-spacing:-.03em;background:linear-gradient(135deg,var(--green),var(--green-2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin:3px 0}
+.lmap-badge .sub{font-size:11px;font-weight:600;color:var(--safe)}
+.lmap-legend{position:absolute;bottom:18px;left:18px;z-index:600;display:flex;flex-direction:column;gap:6px;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);border:1px solid var(--stroke);border-radius:14px;padding:11px 14px;box-shadow:var(--sh-soft);pointer-events:none}
+.lmap-legend span{display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:700;color:var(--ink-2)}
+.lmap-legend i{width:12px;height:12px;border-radius:4px;flex:none}
+.lmap-cta{position:absolute;bottom:18px;right:18px;z-index:600;box-shadow:0 10px 24px -8px rgba(81,69,229,.6)}
+@media(max-width:640px){
+  #lmap{height:380px}
+  .lmap-badge{padding:10px 13px}.lmap-badge .num{font-size:27px}
+  .lmap-cta{left:18px;right:18px;justify-content:center}
+  .lmap-legend{display:none}
+}
+
+  /* ============ MAP PIN-DROP ============ */
+  .trip-pin{flex:none;width:34px;height:34px;border-radius:11px;border:1px solid var(--stroke);background:#fff;color:var(--muted);display:grid;place-items:center;cursor:pointer;transition:.16s;margin-left:2px}
+  .trip-pin:hover{color:var(--green);border-color:var(--green-100);transform:translateY(-1px)}
+  .trip-pin.on{background:linear-gradient(135deg,#5b50ea,#4034c8);color:#fff;border-color:transparent;box-shadow:0 6px 14px -6px rgba(81,69,229,.6);animation:pinpulse 1.4s infinite}
+  .trip-pin svg{width:16px;height:16px}
+  @keyframes pinpulse{0%,100%{box-shadow:0 6px 14px -6px rgba(81,69,229,.6)}50%{box-shadow:0 6px 20px -4px rgba(81,69,229,.9)}}
+  .pin-hint{display:flex;align-items:flex-start;gap:8px;margin-top:10px;padding:10px 12px;font-size:11.5px;line-height:1.5;font-weight:600;color:var(--muted);background:var(--green-50);border:1px solid var(--green-100);border-radius:12px}
+  .pin-hint b{color:var(--green-2);font-weight:800}
+  .pin-hint svg{width:13px;height:13px;color:var(--green);flex:none;margin-top:1px}
+  .mpin{display:grid;place-items:center;width:30px;height:30px;border-radius:50% 50% 50% 0;background:var(--pc);border:3px solid #fff;box-shadow:0 5px 12px rgba(0,0,0,.34);transform:rotate(-45deg)}
+  .mpin svg{transform:rotate(45deg);color:#fff;width:14px;height:14px}
+  </style>
 </head>
 <body>
 <div class="landing" id="landing"></div>
@@ -812,6 +847,6 @@ input,select{font-family:inherit}
 <div class="cmdk-scrim" id="cmdkScrim"></div>
 <div class="toast" id="toast"></div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="app.js?v=14"></script>
+<script src="app.js?v=19"></script>
 </body>
 </html>
